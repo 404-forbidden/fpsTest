@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(ConfigurableJoint))]
 [RequireComponent(typeof(PlayerMotor))]
 public class PlayerController : MonoBehaviour {
 
@@ -9,15 +10,23 @@ public class PlayerController : MonoBehaviour {
     private float speed = 5f;
     [SerializeField]
     private float lookSensitivity = 3f;
-
     [SerializeField]
     private float thrusterForce = 1000f;
 
+    [Header("Spring Settings:")]
+    [SerializeField]
+    private float jointSpring = 20f;
+    [SerializeField]
+    private float jointMaxForce = 40f;
+
     private PlayerMotor motor;
+    private ConfigurableJoint joint;
 
     void Start()
     {
         motor = GetComponent<PlayerMotor>();
+        joint = GetComponent<ConfigurableJoint>();
+        SetJointSettings(jointSpring);
     }
 
     void Update()
@@ -45,10 +54,10 @@ public class PlayerController : MonoBehaviour {
         //카메라 회전 계산
         float xRot = Input.GetAxisRaw("Mouse Y");
 
-        Vector3 cameraRotation = new Vector3(xRot, 0f, 0f) * lookSensitivity;
+        float cameraRotationX = xRot * lookSensitivity;
 
         //카메라 회전 적용
-        motor.RotateCamera(cameraRotation);
+        motor.RotateCamera(cameraRotationX);
 
         //움직임(thrusterForce) 계산
         Vector3 _thrusterForce = Vector3.zero;
@@ -56,9 +65,23 @@ public class PlayerController : MonoBehaviour {
         if (Input.GetButton("Jump"))
         {
             _thrusterForce = Vector3.up * thrusterForce;
+            SetJointSettings(0f);
+        }
+        else
+        {
+            SetJointSettings(jointSpring);
         }
 
         //움직임(thrusterForce) 적용
         motor.ApplyThruster(_thrusterForce);
+    }
+
+    private void SetJointSettings (float _jointSpring)
+    {
+        joint.yDrive = new JointDrive
+        {
+            positionSpring = _jointSpring,
+            maximumForce = jointMaxForce
+        };
     }
 }
